@@ -10,7 +10,7 @@ else
     [p_r, PR_y]    = invScan(y);
     [p, P_r, P_pr] = fromFrame2D(r, p_r);
     
-    % here the chain rule !
+    % ¡¥ Ω∑®‘Ú
     P_y = P_pr * PR_y;
         
 end

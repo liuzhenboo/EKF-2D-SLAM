@@ -1,3 +1,4 @@
+%p是全局坐标系的点，r是局部坐标系的位姿(x,y,a) 
 function [p_r, PR_r, PR_p] = toFrame2D(r , p)
 
 t = r(1:2);
@@ -13,6 +14,7 @@ if nargout > 1
     x = t(1);
     y = t(2);
     
+    %计算p_r对r和p的雅可比
     PR_r = [...
         [ -cos(a), -sin(a),   cos(a)*(py - y) - sin(a)*(px - x)]
         [  sin(a), -cos(a), - cos(a)*(px - x) - sin(a)*(py - y)]];

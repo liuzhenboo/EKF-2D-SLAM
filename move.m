@@ -1,3 +1,6 @@
+%运动模型
+%角度每次只增加固定输入和噪声
+%下一时刻会到达当前局部坐标系下的(dx,0)点
 function [ro, RO_r, RO_n] = move(r, u, n, dt)
 % dt is not used by this function.
 
@@ -8,6 +11,7 @@ da = u(2) + n(2);
 ao = a + da;
 dp = [dx;0];
 
+%统一调到[-pi,pi]
 if ao > pi
     ao = ao - 2*pi;
 end

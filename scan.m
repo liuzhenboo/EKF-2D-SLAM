@@ -1,17 +1,20 @@
 %   d = sqrt(px^2 + py^2) + rd
 %   a = atan2(py, px) + ra
-
 function [y, Y_x] = scan(x)
 
 px = x(1);
 py = x(2);
 
 d = sqrt(px^2 + py^2);
+%返回向量(px,py)与x轴的夹角
 a = atan2(py, px);
-% a = atan(py/ px); % use this only for symbolic Jacobian computation
-
+%返回py/px对应的反正切
+% a = atan(py/ px); 
 y = [d;a];
 
+%反正切的导数
+% y=atan(x)
+%1/(1+x^2)
 if nargout > 1
     
     Y_x =[...
