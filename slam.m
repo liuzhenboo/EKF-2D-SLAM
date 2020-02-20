@@ -116,7 +116,7 @@ Sensor1 = line(...
      'LineStyle','--');
 % II. 大循环；机器人每前进一步，循环一次
 
-for t = 1:2000
+for t = 1:400
 %      if t == 200
 %          sensor_r = 0.2;         
 %      end
@@ -356,7 +356,7 @@ for t = 1:2000
          set(reG,'xdata',X,'ydata',Y);
      end
    drawnow;
-    pause(0.3);
+    pause(0.1);
     
 end
 
