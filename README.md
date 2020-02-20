@@ -1,5 +1,5 @@
 
-## 应用EKF实现3D-SLAM
+## 应用EKF实现2D-SLAM
 
 ### EKF-SLAM步骤
 
@@ -20,8 +20,8 @@
 
 这时候观测到新的固定点，需要进行状态增广。根据逆观测方程，使用观测信息推测出新加的增广状态均值与方差，然后加入到总体的状态与协方差矩阵中。
 
-仿真结果：
+### 代码使用
+主文件为slam.m，运行即可。
 
-![3](https://github.com/liuzhenboo/EKF-2D-SLAM/raw/master/videos/3.jpg)
 
 
