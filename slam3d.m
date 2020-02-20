@@ -18,7 +18,11 @@ M = diag(m.^2);
 %       W: 设置所有路标点位置
 R = [0;-2.5;0];
 u = [0.1;0.05];
-W = cloister(-4,4,-4,4);
+% 环形landmarks
+move_r =6;
+r1=4;
+r2=8;
+W = landmarks1(r1,r2,move_r);
 
 % Id用来存放观测过的路标点的Id；如果用c++实现，建议使用map结构。
 Id = zeros(1,size(W,2));
