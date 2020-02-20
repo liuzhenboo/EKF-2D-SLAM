@@ -1,9 +1,7 @@
 
-## 应用EKF实现2D-SLAM
+## EKF-2D-SLAM
 
 ### EKF-SLAM步骤
-
-状态变量X为当前机器人的位置(x,y,α,...Mi...),Mi为截至到当前观测过的固定点坐标。
 
 - 运动更新
 
@@ -20,8 +18,27 @@
 
 这时候观测到新的固定点，需要进行状态增广。根据逆观测方程，使用观测信息推测出新加的增广状态均值与方差，然后加入到总体的状态与协方差矩阵中。
 
-### 代码使用
+### Matlab代码
 主文件为slam.m，运行即可。
 
+### 结果展示
+- 传感器探测范围与路标点
+
+![2](https://github.com/liuzhenboo/EKF-2D-SLAM/raw/master/videos/2.PNG)
+
+- 第一次状态增广
+
+![1](https://github.com/liuzhenboo/EKF-2D-SLAM/raw/master/videos/1.PNG)
+
+- 状态持续扩大
+
+![4](https://github.com/liuzhenboo/EKF-2D-SLAM/raw/master/videos/4.PNG)
+
+
+- 状态增广已停止
+
+![5](https://github.com/liuzhenboo/EKF-2D-SLAM/raw/master/videos/5.PNG)
+
+![6](https://github.com/liuzhenboo/EKF-2D-SLAM/raw/master/videos/6.PNG)
 
 
