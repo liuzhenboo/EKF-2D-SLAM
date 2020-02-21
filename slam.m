@@ -1,48 +1,58 @@
-%format long 
+% format long 
 % I. 初始化
 %
-%   0. 定义系统.
-
-% System noise
+% 运动噪声
 q = [0.01;0.02];
 Q = diag(q.^2);
-% Measurement noise
+% 测量噪声
 m = [.15; 1*pi/180];
 M = diag(m.^2);
-% randn('seed',1);
 
-%
-%   1. 仿真路标点环境
-%       R: robot pose u: control
-%       W: 设置所有路标点位置
+% R: 机器人初始位置
+% u: 控制量
 R = [0;-2.5;0];
 u = [0.1;0.05];
+
+% 设置外界路标点环境
 % 环形摆放的landmarks
+% W: 设置所有路标点位置
 jiaodu_perLandMark =6;  %取1,3,6,15,30,60...(360的倍数均可)
-r1=3;
-r2=2;
+r1=2;
+r2=3;
 r3=3.5;
 W = landmarks(r1,r2,r3,jiaodu_perLandMark);
-sensor_r = 2;
 
-% Id用来存放观测过的路标点的Id；如果用c++实现，建议使用map结构。
+% 传感器探测半径
+sensor_r = 2.5;
+
+% Id容器用来判别当前探测到的路标点曾经是否被观测过；若没有观测过，那么此时需要将其加入Id容器。
+% 这里使用W中每个点的索引作为路标点的id；Id初始化为一个足够大的零数组即可。
+% Id(类型)==1，表示曾经观测过；Id(类型)==0，表示曾经没有观测过。
+% 如果用c++实现，建议使用map结构。
 Id = zeros(1,size(W,2));
+
+% y_news表示当前新探测到的路标点，y_news(:,i)记录观测量和路标点类型
+% 同理y_olds
 y_olds = zeros(3,size(W,2));
 y_news = zeros(3,size(W,2));
 
-%   2. 估计量初始化
-%   状态量及协方差
+%   状态量及协方差初始化
 x = zeros(numel(R)+numel(W), 1);
 P = zeros(numel(x),numel(x));
 
-mapspace = zeros(1,size(W,2));
+% id_to_x_map：id------>>>id对应的状态变量在x中的位置
+id_to_x_map = zeros(1,size(W,2));
+
+% x和P初始化
 r = [1 2 3];
-s = [4 5];
 x(r) = R;
 %x(r) = [8;-2.5;0];
 P(r,r) = 0;
 
-%   3. 画图
+% 每次状态增广在x中的位置
+s = [4 5];
+
+%  绘图
 mapFig = figure(1);
 cla;
 axis([-5 5 -5 5])
@@ -75,6 +85,7 @@ lG = line('parent',gca,...
     'xdata',[],...
     'ydata',[]);
 
+% 估计的路标点协方差
 eG1 = zeros(1,size(W,2));
 for i = 1:numel(eG1)
     eG1(i) = line(...
@@ -84,12 +95,14 @@ for i = 1:numel(eG1)
         'ydata',[]);
 end
 
+% 估计的机器人位置
 reG = line(...
     'parent', gca,...
     'color','r',...
     'xdata',[],...
     'ydata',[]);
 
+% 传感器探测范围（以真实位置为圆心）
 sensor1 = line(...
     'parent', gca,...
     'color','m',...
@@ -102,6 +115,8 @@ sensor2 = line(...
     'xdata',[],...
     'ydata',[],...
     'LineStyle','--');
+
+%传感器探测范围（以估计位置为圆心）
 Sensor1 = line(...
     'parent', gca,...
     'color','m',...
@@ -114,39 +129,32 @@ Sensor1 = line(...
     'xdata',[],...
     'ydata',[],...
      'LineStyle','--');
-% II. 大循环；机器人每前进一步，循环一次
 
-for t = 1:400
+ % II. 主循环；
+ % 机器人每前进一步，循环一次
+for t = 1:1200
+    %不同探测半径
 %      if t == 200
-%          sensor_r = 0.2;         
+%           sensor_r = 1;         
 %      end
 %      if t == 400
-%         sensor_r =0.5; 
+%          sensor_r =1.5; 
 %      end 
 %      if t == 600
-%         sensor_r =0.8; 
-%      end 
-%      if t == 800
-%         sensor_r =3; 
-%      end 
-%      
-%      if t == 1000
-%          sensor_r = 4;         
-%      end
-%      if t == 1200
-%         sensor_r =1.5; 
-%      end 
-%      if t == 1400
 %         sensor_r =2; 
 %      end 
-%      if t == 1600
-%         sensor_r =3; 
+%      if t == 800
+%         sensor_r =2.5; 
 %      end 
+%      if t == 1000
+%          sensor_r = 3;         
+%      end
 
-    % 1. Simulator
+    % 1. 观测仿真
     n = q.*randn(2,1);
-    % 下一时刻机器人位置；
+    % 下一时刻机器人真实位置；
     R = move(R, u, n);
+    
     % 传感器获取的信息；i表示路标点的唯一ID标识号；yi表示观测到的特征点在当前坐标系的坐标，若是为零，表示该种路标点没有观测到。
     % 观测到的路标点有两种来源：
     % 1:曾经观测到过。EKF时候只需要根据正向观测方程project对当前状态量进行修正就可以了。
@@ -156,20 +164,14 @@ for t = 1:400
     i_olds=1;
     i_news=1;
     %仅仅保留一个探测到的路标temp=1
-    temp =1;
-    % 传感器的观测范围
+    %temp =1;
     for i = 1:size(W,2)
         v = m.*randn(2,1);
          yi= project(R, W(:,i)) + v;
-        %if (yi(2)>0) && (yi(1)>0) && (Id(i)==1)
-        %if (Id(i)==1)
         if yi(1) < sensor_r && Id(i) == 1
-            %(yi(1)*yi(1)+yi(2)*yi(2) <= sensor_r^2) && (Id(i) ==1 )
                y_olds(:,i_olds) = [yi(1);yi(2);i];
                i_olds = i_olds + 1;
-        %(Id(i)==0) &&(yi(2)>0) &&(yi(1)>0) && temp ==1
         elseif  yi(1) < sensor_r &&  Id(i) == 0 %&& temp ==1
-            %(yi(1)*yi(1)+yi(2)*yi(2) <= sensor_r^2) && (Id(i) ==0 )
                 y_news(:,i_news) = [yi(1);yi(2);i];
                 i_news = i_news + 1;
                 Id(i) = 1;
@@ -184,10 +186,8 @@ for t = 1:400
         y_news(:,i) = [101;0;0];
     end
   
-    % 2. Filter
-    %   a. Prediction
-    %   CAUTION this is sub-optimal in CPU time
-    % [x(r), R_r, R_n] = move(x(r), u, n);
+    % 2. EKF滤波
+    %   a. 预测
     % x(r)是一步预测位置，R_r和R_n是x(r)对R和n在当前状态的雅可比矩阵
     [x(r), R_r, R_n] = move(x(r), u, [0 0]);
     P_rr = P(r,r);
@@ -195,10 +195,8 @@ for t = 1:400
     P(:,r) = P(r,:)';
     P(r,r) = R_r*P_rr*R_r' + R_n*Q*R_n';
     
- %     b. correction
-  %        i. known lmks
-         % 观测范围：当前时刻会观测到所有曾经被观测过的路标点；
-          %对多个观测量的处理方式：对观测量逐个处理，每次根据对一个路标点的观测量对状态进行更新
+ %     b. 修正
+ % 对多个观测量的处理方式：对观测量逐个处理，每次根据对一个路标点的观测量对状态进行更新
     end_old = find(y_olds(1,:)==100,1);  
     if isempty(end_old)
         end_old=size(y_olds,2)+1;
@@ -209,7 +207,7 @@ for t = 1:400
         if isempty(j)
             break
         end
-        id = find(mapspace==y_olds(3,j),1);
+        id = find(id_to_x_map==y_olds(3,j),1);
         v = [id*2+2 id*2+3];
         [e, E_r, E_l] = project(x(r), x(v));
         E_rl = [E_r E_l];
@@ -238,8 +236,8 @@ for t = 1:400
         P = P - K * Z * K';
     end
     
-    %每个大循环会对状态进行增广，增加一个新的路标点状态量；如果等到路标点全部已经初始化，那么初始化部分就不会再执行。
-     %     ii. init new lmks
+     % 3. 状态增广
+    % 每个大循环会对状态进行增广，增加一个新的路标点状态量；如果等到路标点全部已经初始化，那么初始化部分就不会再执行。   
     end_new = find(y_news(1,:)==101,1);
     if isempty(end_new)
         end_new=size(y_news,2)+1;
@@ -248,8 +246,8 @@ for t = 1:400
         if isempty(m1)
             break
         end
-        id = find(mapspace==0,1);
-        mapspace(id) = y_news(3,m1);
+        id = find(id_to_x_map==0,1);
+        id_to_x_map(id) = y_news(3,m1);
         
         % measurement
         yi_2 = y_news(:,m1);
@@ -261,8 +259,9 @@ for t = 1:400
         s = s + [2 2];
     end
     
-     % 3. Graphics
-    
+     % 4. 更新图
+
+     % 机器人仿真位置与传感器探测范围 
     set(RG, 'xdata', R(1), 'ydata', R(2));
     circle_x = linspace((R(1)-0.9999*sensor_r),(R(1)+0.9999*sensor_r));
     circle_y1 = sqrt(sensor_r^2 - (circle_x - R(1)).^2) + R(2);
@@ -270,6 +269,7 @@ for t = 1:400
     set(sensor1,'xdata',circle_x,'ydata',circle_y1);
     set(sensor2,'xdata',circle_x,'ydata',circle_y2);
     
+    % 探测范围（估计位置为圆心）
     set(rG, 'xdata', x(r(1)), 'ydata', x(r(2)));
     Circle_x = linspace((x(r(1))-0.9999*sensor_r),(x(r(1))+0.9999*sensor_r));
     Circle_y1 = sqrt(sensor_r^2 - (Circle_x - x(r(1))).^2) + x(r(2));
@@ -277,86 +277,86 @@ for t = 1:400
     %set(Sensor1,'xdata',Circle_x,'ydata',Circle_y1);
     %set(Sensor2,'xdata',Circle_x,'ydata',Circle_y2);    
         
-  % 画出估计的路标点位置
+  % 如果第一次没有状态增广，即刻返回进行下一次循环
   if s(1)==4
         continue
   end
+  
+  % 估计的路标点位置
   w = 2:((s(1)-2)/2);
   w = 2*w;
   lx = x(w);
   ly = x(w+1);
   set(lG, 'xdata', lx, 'ydata', ly);
   
-  % 当前估计的路标点分为三种：
+  % 画出估计路标点协方差椭圆
+  % 估计的路标点分为三种：
   % 1：刚刚探索发现的
   % 2：之前遇到过，现在重新遇见的
   % 3：之前遇到过，当前没有遇见
-  %[X, Y]=[0 0];
-  for i = 1:numel(eG1)
-    %set(eG1(i),'xdata',X,'ydata',Y,'color','w');
-     set(eG1(i),'color','y');   
-  end
-  %%%%%第一种：刚刚探索发现的（蓝色）
+  
+% 先将所有路标点的协方差椭圆都赋值黑色
+%   for i = 1:numel(eG1)
+%      set(eG1(i),'color','k');   
+%   end
+  
+%%%%%第一种：刚刚探索发现的（蓝色）
   for g1 = 1:(end_new-1)
       if isempty(g1)
             break
       end
       o1 = y_news(3,g1);
-      h1 = find(mapspace==o1,1);
-      %plot1 = ()
+      h1 = find(id_to_x_map==o1,1);
       temp1 = [2*h1+2;2*h1+3];
       le = x(temp1);
       LE = P(temp1,temp1);
       [X,Y] = cov2elli(le,LE,3,16);   
-      %set(lG,'xdata',le(1),'ydata',le(2));
       set(eG1(o1),'xdata',X,'ydata',Y,'color','b');
   end
-  %%%%第二种：之间遇到过，现在重新遇见的
+  %%%%第二种：之间遇到过，现在重新遇见的（红色）
   for g2 = 1:(end_old-1)
       if isempty(g2)
             break
       end
       o2 = y_olds(3,g2);
-      h2 = find(mapspace==o2,1);
+      h2 = find(id_to_x_map==o2,1);
       temp2 = [2*h2+2;2*h2+3];
       le = x(temp2);
       LE = P(temp2,temp2);
       [X,Y] = cov2elli(le,LE,3,16);  
       set(eG1(o2),'xdata',X,'ydata',Y,'color','r');
   end
-  %%%%第三种：之前遇到过，现在没有遇见
-  v = find(mapspace==0,1);
+  %%%%第三种：之前遇到过，现在没有遇见（黑色）
+  v = find(id_to_x_map==0,1);
   if isempty(v)
-      v = size(mapspace,2)+1;
+      v = size(id_to_x_map,2)+1;
   end
   for g3 = 1:v-1
       if isempty(g3)
             break
       end
-      %temp3 = [0;0];
-      %a=mapspace(g3);
-      a = find(y_olds(3,:)==mapspace(g3),1);
-      b = find(y_news(3,:)==mapspace(g3),1);   
+      a = find(y_olds(3,:)==id_to_x_map(g3),1);
+      b = find(y_news(3,:)==id_to_x_map(g3),1);   
       if (isempty (a)) && (isempty(b)) 
          temp3 =  [2*g3+2;2*g3+3];
-      
-      %h2 = find(mapspace==o2,1);
-      %temp2 = [2*h2+2;2*h2+3];
-      le = x(temp3);
+            le = x(temp3);
       LE = P(temp3,temp3);
       [X,Y] = cov2elli(le,LE,3,16);
-      set(eG1(mapspace(g3)),'xdata',X,'ydata',Y,'color','k');
+      set(eG1(id_to_x_map(g3)),'xdata',X,'ydata',Y,'color','k');
       end
   end
 
+% 估计的机器人位置协方差椭圆（红色）
      if t > 1
          re = x(r(1:2));
          RE = P(r(1:2),r(1:2));
          [X,Y] = cov2elli(re,RE,3,16);
          set(reG,'xdata',X,'ydata',Y);
      end
+   
    drawnow;
-    pause(0.1);
+   
+   pause(0.1);
     
 end
 
