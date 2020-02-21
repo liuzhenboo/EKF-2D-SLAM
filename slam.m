@@ -1,6 +1,29 @@
+%  https://github.com/liuzhenboo/EKF-2D-SLAM
+% MIT License
+% 
+% Copyright (c) 2020 liuzhenboo
+% 
+% Permission is hereby granted, free of charge, to any person obtaining a copy
+% of this software and associated documentation files (the "Software"), to deal
+% in the Software without restriction, including without limitation the rights
+% to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+% copies of the Software, and to permit persons to whom the Software is
+% furnished to do so, subject to the following conditions:
+% 
+% The above copyright notice and this permission notice shall be included in all
+% copies or substantial portions of the Software.
+% 
+% THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+% IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+% FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+% AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+% LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+% OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+% SOFTWARE.
 % format long 
 % I. 初始化
 %
+disp('EKF-2D-SLAM sample program start!!')
 % 运动噪声
 q = [0.01;0.02];
 Q = diag(q.^2);
@@ -10,7 +33,7 @@ M = diag(m.^2);
 
 % R: 机器人初始位置
 % u: 控制量
-R = [0;-2.5;0];
+R = [0;-2.2;0];
 u = [0.1;0.05];
 
 % 设置外界路标点环境
@@ -52,11 +75,22 @@ P(r,r) = 0;
 % 每次状态增广在x中的位置
 s = [4 5];
 
-%  绘图
+%主循环次数
+% 125/每圈
+ loop =250;
+ 
+% 存放位姿仿真量
+poses_ = zeros(3,loop);
+
+% 存放位姿历史估计量
+poses = zeros(3,loop);
+
+ %  绘图
 mapFig = figure(1);
 cla;
 axis([-5 5 -5 5])
 axis square
+%axis equal
 % 所有路标点
 WG = line('parent',gca,...
     'linestyle','none',...
@@ -64,23 +98,23 @@ WG = line('parent',gca,...
     'color','m',...
     'xdata',W(1,:),...
     'ydata',W(2,:));
-% 仿真下机器人初始位置
+% 仿真下机器人位置
 RG = line('parent',gca,...
     'marker','+',...
-    'color','m',...
+    'color','r',...
     'xdata',R(1),...
     'ydata',R(2));
-% 假设的机器人初始位置
+% 估计的机器人位置
 rG = line('parent',gca,...
     'linestyle','none',...
     'marker','+',...
-    'color','k',...
+    'color','b',...
     'xdata',x(r(1)),...
     'ydata',x(r(2)));
 % 估计的路标点位置
 lG = line('parent',gca,...
     'linestyle','none',...
-    'marker','.',...
+    'marker','+',...
     'color','k',...
     'xdata',[],...
     'ydata',[]);
@@ -130,9 +164,33 @@ Sensor1 = line(...
     'ydata',[],...
      'LineStyle','--');
 
+ true_pose = line(...
+    'parent', gca,...
+    'color','r',...
+    'xdata',[],...
+    'ydata',[],...
+    'LineWidth',0.8);
+     %'LineStyle','--');
+ 
+ estimate_pose = line(...
+    'parent', gca,...
+    'color','b',...
+    'xdata',[],...
+    'ydata',[],...
+    'LineWidth',0.8);
+    % 'LineStyle','--');
+ 
  % II. 主循环；
  % 机器人每前进一步，循环一次
-for t = 1:1200
+for t = 1:loop
+%     if t == 125
+%         u(1) = 0.2;
+%         sensor_r = 4;
+%     end
+%     if t == 375
+%         u(1) = 0.2;
+%         sensor_r = 5;
+%     end
     %不同探测半径
 %      if t == 200
 %           sensor_r = 1;         
@@ -259,7 +317,17 @@ for t = 1:1200
         s = s + [2 2];
     end
     
-     % 4. 更新图
+     % 4. 获取想要的信息
+    % 获取poses信息
+    poses(1,t) = x(1);
+    poses(2,t) = x(2);
+    poses(3,t) = x(3);   
+    poses_(1,t) = R(1);
+    poses_(2,t) = R(2);
+    poses_(3,t) = R(3);
+    % ...
+    
+     % 5. 绘图展示
 
      % 机器人仿真位置与传感器探测范围 
     set(RG, 'xdata', R(1), 'ydata', R(2));
@@ -276,7 +344,12 @@ for t = 1:1200
     Circle_y2 = x(r(2)) - sqrt(sensor_r^2 - (Circle_x - x(r(1))).^2);
     %set(Sensor1,'xdata',Circle_x,'ydata',Circle_y1);
     %set(Sensor2,'xdata',Circle_x,'ydata',Circle_y2);    
-        
+    
+    % 位置定位轨迹
+    set(estimate_pose,'xdata',poses(1,1:t),'ydata',poses(2,1:t));
+    set(true_pose,'xdata',poses_(1,1:t),'ydata',poses_(2,1:t));
+    
+    legend([estimate_pose true_pose lG WG],{'Estimate','Truth' 'Estimate landmark' 'True landmark'})
   % 如果第一次没有状态增广，即刻返回进行下一次循环
   if s(1)==4
         continue

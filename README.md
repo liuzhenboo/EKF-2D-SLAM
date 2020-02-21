@@ -41,4 +41,14 @@
 
 ![6](https://github.com/liuzhenboo/EKF-2D-SLAM/raw/master/videos/6.PNG)
 
+---------
+## 改动
+2020/2/21增加了轨迹显示
+
+![7](https://github.com/liuzhenboo/EKF-2D-SLAM/raw/master/videos/7.PNG)
+
+![8](https://github.com/liuzhenboo/EKF-2D-SLAM/raw/master/videos/8.PNG)
+
+![9](https://github.com/liuzhenboo/EKF-2D-SLAM/raw/master/videos/9.PNG)
+
 
