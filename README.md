@@ -22,6 +22,9 @@
 主文件为slam.m，运行即可。
 
 ### 结果展示
+
+[Bilibili视频](https://www.bilibili.com/video/av90456528)
+
 - 传感器探测范围与路标点
 
 ![2](https://github.com/liuzhenboo/EKF-2D-SLAM/raw/master/videos/2.PNG)

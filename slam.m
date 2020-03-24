@@ -25,7 +25,7 @@
 %
 disp('EKF-2D-SLAM sample program start!!')
 % ÔË¶¯ÔëÉù
-q = [0.01;0.02];
+q = [0.01;0.01];
 Q = diag(q.^2);
 % ²âÁ¿ÔëÉù
 m = [.15; 1*pi/180];
