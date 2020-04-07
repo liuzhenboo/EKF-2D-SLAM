@@ -21,6 +21,9 @@
 ### Matlab代码
 主文件为slam.m，运行即可。
 
+### 文档
+paper文件夹里面有pdf文档，里面的公式可能会有些许笔误，最新的更新请访问[CSDN](https://blog.csdn.net/liu2015302026/article/details/105353353)
+
 ### 结果展示
 
 [Bilibili视频](https://www.bilibili.com/video/av90456528)
